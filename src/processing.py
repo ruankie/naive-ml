@@ -1,6 +1,8 @@
-#import pandas as pd
+import pandas as pd
 import numpy as np
+import datetime
 import ta
+from sklearn.preprocessing import StandardScaler #, MinMaxScaler
 
 def get_close_volume(raw_data):
     """
@@ -90,3 +92,80 @@ def get_technical_indicators(data, momentum=True, trend=True, volume=True, volat
         df = df.fillna(value=means_dict)
     
     return df
+
+def train_test_split(all_data, tt_split_date='2021-06-01'):
+    """
+    Splits the given data into a training and testing portion. The split
+    is done according to the train-test-split date tt_split_date.
+    
+    Parameters
+    ----------
+    data : data set to be split (should contain a datetime index named Date)
+    tt_split_date : boundary between train and test split (string with %Y-%m-%d format)
+                  
+    Returns
+    -------
+    Returns two DataFrames, one training set and one testing set which are separated
+    by the train-test-split date. Both of these DataFrames contain all features for all 
+    stocks present in the input data.
+    """
+    # use copy of data and reset index
+    data = all_data.copy().reset_index(drop=False)
+
+    # convert to datetime
+    if isinstance(tt_split_date, str):
+        tt_split_date = datetime.datetime.strptime(tt_split_date, '%Y-%m-%d')
+    else:
+        raise(TypeError(f'tt_split_date must be a string. The value passed has type: {type(tt_split_date)}.'))
+
+    # divide according to boundary
+    print(f'Performing train-test-split...\nUsing boundary date:\t{tt_split_date.date()}')
+    train_df = data[data['Date'].apply(lambda date: date < tt_split_date)]    
+    test_df = data[data['Date'].apply(lambda date: date >= tt_split_date)]
+    print('done.')
+    
+    # set date as index
+    train_df = train_df.set_index('Date')
+    test_df = test_df.set_index('Date')
+
+    return train_df, test_df
+
+def get_X_y(train_df, test_df, target_var_name='TARGET_return', do_scale=True):
+    """
+    Split the training and testing data up into features (X) and targets (y). 
+    The target variable can also be selected. Optionally, the returned data can be scaled. 
+    If scaled, the scaler object will also be returned so that data can be unscaled 
+    appropriately later.
+    
+    Parameters
+    ----------
+    train_df : training data containing all features and targets
+    test_df : test data containing all features and targets
+    target_var_name : this can be eiter 'TARGET_return', 'TARGET_price', or 'TARGET_log_return'
+    do_scale : standardise features or not: z = (x - u) / s
+                  
+    Returns
+    -------
+    X_train, X_test, y_train, y_test, scaler_object
+    """
+    # identify target variables
+    targ_vars = [col for col in train_df.columns if 'TARGET' in col]
+
+    # get X_train and X_test for ticker
+    X_train = train_df.drop(targ_vars, axis=1)
+    X_test = test_df.drop(targ_vars, axis=1)
+
+    # get y_train and y_test
+    y_train = train_df[target_var_name]
+    y_test = test_df[target_var_name]
+    
+    # scale data
+    if do_scale:
+        # fit scaler on X_train then transform X_train and X_test
+        scaler_object = StandardScaler().fit(X_train)
+        X_train = pd.DataFrame(scaler_object.transform(X_train), index=X_train.index, columns=X_train.columns)
+        X_test = pd.DataFrame(scaler_object.transform(X_test), index=X_test.index, columns=X_test.columns)
+    else:
+        scaler_object = None
+    
+    return X_train, X_test, y_train, y_test, scaler_object
