@@ -13,7 +13,7 @@ def get_close_volume(raw_data):
     df = df.rename(columns={'Adj Close': 'Close'})
     return df
 
-def get_targets(data, price=True, returns=True, log_returns=True, close_col='Close'):
+def get_targets(data, price=True, returns=True, close_col='Close'):
     """
     Given a DataFrame containing close price column named close_col,
     calculate the specified target variables. Returns the original
@@ -29,10 +29,6 @@ def get_targets(data, price=True, returns=True, log_returns=True, close_col='Clo
     # add next day's return as target
     if returns:
         df['TARGET_return'] = df[close_col].pct_change().shift(-1).fillna(0.0)
-    
-    # add next day's log-return as target
-    if log_returns:
-        df['TARGET_log_return'] = np.log(df[close_col].pct_change().shift(-1).fillna(0.0) + 1.0)
     
     return df
 
@@ -141,7 +137,7 @@ def get_X_y(train_df, test_df, target_var_name='TARGET_return', do_scale=True):
     ----------
     train_df : training data containing all features and targets
     test_df : test data containing all features and targets
-    target_var_name : this can be eiter 'TARGET_return', 'TARGET_price', or 'TARGET_log_return'
+    target_var_name : this can be eiter 'TARGET_return' or 'TARGET_price'
     do_scale : standardise features or not: z = (x - u) / s
                   
     Returns
