@@ -1,5 +1,8 @@
 # Notebooks
-notebooks/
+#notebooks/*blog*
+
+# Anything blog related
+*blog*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
