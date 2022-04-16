@@ -2,7 +2,7 @@
 #notebooks/*blog*
 
 # Anything blog related
-#*blog*
+*blog*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
